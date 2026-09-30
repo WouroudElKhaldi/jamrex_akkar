@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Jamrex Miniyeh palette — Jamrex blue + teal, refined:
+  a deeper royal blue for trust, a fresher teal for action, cool neutrals, navy dark mode.
+*/
+:root {
+  --bg: #f6f8fc;
+  --surface: #ffffff;
+  --surface-2: #eef2f9;
+  --border: #dde4f0;
+  --fg: #0e1a35;
+  --muted: #5b6b8a;
+  --brand: #1b45d6;
+  --brand-hover: #1636ad;
+  --brand-soft: #e6edff;
+  --brand-fg: #ffffff;
+  --accent: #0fb8a5;
+  --accent-hover: #0a9788;
+  --accent-soft: #dcf7f3;
+  --accent-fg: #04241f;
+  --danger: #e5484d;
+  --warn: #f5a623;
+  --ok: #17a34a;
+  --shadow: 0 1px 2px rgba(14, 26, 53, 0.05), 0 8px 24px -8px rgba(14, 26, 53, 0.12);
+  --shadow-lg: 0 4px 6px rgba(14, 26, 53, 0.04), 0 24px 48px -12px rgba(27, 69, 214, 0.25);
+}
+
+.dark {
+  --bg: #080e1f;
+  --surface: #0f1830;
+  --surface-2: #16223f;
+  --border: #223052;
+  --fg: #eaf0ff;
+  --muted: #93a3c7;
+  --brand: #5b86ff;
+  --brand-hover: #7b9dff;
+  --brand-soft: #142248;
+  --brand-fg: #06102b;
+  --accent: #2fd8c4;
+  --accent-hover: #55e5d3;
+  --accent-soft: #0d2f33;
+  --accent-fg: #03201c;
+  --danger: #ff6b70;
+  --warn: #ffb84d;
+  --ok: #3ddc84;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.3), 0 24px 48px -12px rgba(0, 0, 0, 0.6);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-fg: var(--brand-fg);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-ok: var(--ok);
+  --shadow-card: var(--shadow);
+  --shadow-glow: var(--shadow-lg);
+  --font-sans: var(--font-latin), var(--font-arabic), system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+html[dir="rtl"] body {
+  font-family: var(--font-arabic), var(--font-latin), system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-latin), var(--font-arabic), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Soft animated gradient used in the hero */
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(0, -14px, 0) scale(1.03); }
+}
+.animate-float-slow { animation: float-slow 7s ease-in-out infinite; }
+
+@keyframes fade-swap {
+  from { opacity: 0.15; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fade-swap { animation: fade-swap 0.28s ease-out; }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+html[dir="rtl"] .marquee-track { animation-direction: reverse; }
+.marquee-track { animation: marquee 60s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
+
+/* Rich text blocks (CMS pages) */
+.prose-lite h2 { font-size: 1.35rem; font-weight: 700; margin: 1.6rem 0 0.6rem; }
+.prose-lite h3 { font-size: 1.1rem; font-weight: 700; margin: 1.2rem 0 0.4rem; }
+.prose-lite p { margin: 0.75rem 0; line-height: 1.8; color: var(--muted); }
+.prose-lite ul { margin: 0.75rem 0; padding-inline-start: 1.25rem; list-style: disc; color: var(--muted); }
+.prose-lite li { margin: 0.35rem 0; line-height: 1.7; }
+
+/* Printing (invoice) */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+}
+
+/* ───────── motion design ───────── */
+@keyframes shimmer-move {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+.text-shimmer {
+  background-image: linear-gradient(90deg, var(--brand), var(--accent), var(--brand));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-move 4s linear infinite;
+}
+
+@keyframes bubble-rise {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.9; }
+  100% { transform: translate3d(var(--drift, 0px), -115vh, 0); opacity: 0; }
+}
+.bubble-rise { animation: bubble-rise linear infinite; will-change: transform; }
+
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+#main { animation: page-in 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-8deg) scale(1.1); }
+  75% { transform: rotate(8deg) scale(1.1); }
+}
+.hover-wiggle:hover { animation: wiggle 0.5s ease; }
+
+.marquee-slow { animation: marquee 140s linear infinite; }
+.marquee-slow:hover { animation-play-state: paused; }
+html[dir="rtl"] .marquee-slow { animation-direction: reverse; }
+
+/* respect "reduce motion": no ambient loops, near-instant transitions */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@keyframes rowin { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* "Trusted by celebrities" endless strip */
+@keyframes celeb-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes celeb-scroll-rtl { from { transform: translateX(0); } to { transform: translateX(50%); } }
+.celeb-track { animation: celeb-scroll 80s linear infinite; }
+[dir="rtl"] .celeb-track { animation-name: celeb-scroll-rtl; }
+.celeb-mask:hover .celeb-track { animation-play-state: paused; }
+.celeb-mask { -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+@media (prefers-reduced-motion: reduce) { .celeb-mask { overflow-x: auto; } .celeb-track { animation: none !important; } }
+
+/* product-card tilt (see components/fx/tilt-card.tsx) */
+.tilt { transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.tilt[data-tilt] { transition: transform 0.1s linear; will-change: transform; }
+.tilt-glare { opacity: 0; transition: opacity 0.3s; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.32), transparent 55%); }
+.tilt[data-tilt] .tilt-glare { opacity: 1; }
+
+/* sections far below the screen are not laid out or painted until the visitor gets near them */
+.cv-auto { content-visibility: auto; contain-intrinsic-size: auto 640px; }

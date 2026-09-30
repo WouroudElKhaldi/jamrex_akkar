@@ -1,0 +1,57 @@
+{
+  "name": "jamrex-miniyeh",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "import:jamrex": "tsx scripts/import-jamrex.ts",
+    "vapid": "tsx scripts/generate-vapid.ts",
+    "support:create": "tsx scripts/create-support.ts",
+    "db:zones": "tsx scripts/seed-zones.ts",
+    "import:home-media": "tsx scripts/import-home-media.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.10.0",
+    "@types/qrcode": "^1.5.6",
+    "bcryptjs": "^3.0.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.0.0",
+    "jose": "^6.0.0",
+    "lucide-react": "^0.544.0",
+    "next": "^15.5.0",
+    "next-auth": "^5.0.0-beta.32",
+    "nodemailer": "^10.0.12",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "server-only": "^0.0.1",
+    "sharp": "^0.35.5",
+    "tailwind-merge": "^3.3.0",
+    "web-push": "^3.6.7",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/web-push": "^3.6.4",
+    "prisma": "^6.10.0",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0"
+  }
+}

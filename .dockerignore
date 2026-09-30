@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+uploads
+.env
+.env.local
+*.csv
+*.xlsx
+RESEARCH.md
+PLAN.md

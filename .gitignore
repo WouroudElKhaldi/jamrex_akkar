@@ -1,0 +1,24 @@
+node_modules
+.next
+out
+next-env.d.ts
+.env
+.env.local
+# photos are tracked on purpose (see README); the small "-sm" thumbnails are rebuilt automatically on first request
+uploads/**/*-sm.webp
+*.tsbuildinfo
+.DS_Store
+# raw scrape exports (kept locally only)
+jamrexlb-com-*.csv
+jamrexlb-com-*.xlsx
+
+.localdb/data
+.localdb/node_modules
+.localdb/*.log
+.localdb/*.err
+dev.log
+dev.err
+prod.log
+prod.err
+
+.support-credentials.txt

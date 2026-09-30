@@ -1,0 +1,416 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── Staff ─────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  isOwner      Boolean  @default(false)
+  // developer/support account: full access, never listed or editable from the Staff pages
+  hidden       Boolean  @default(false)
+  active       Boolean  @default(true)
+  failedLogins Int      @default(0)
+  lockedUntil  DateTime?
+  // bumped on password change / deactivation: every session signed with an older number stops working
+  sessionVersion Int    @default(0)
+  // two-factor login (authenticator app). The secret is stored encrypted; recovery codes only as hashes.
+  totpSecretEnc  String?
+  totpEnabled    Boolean @default(false)
+  totpLastStep   Int?
+  recoveryHashes String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  permissions   UserPermission[]
+  pushSubs      PushSubscription[]
+  orderEvents   OrderEvent[]
+}
+
+// Per-employee permissions (no fixed roles): one row per granted permission key.
+model UserPermission {
+  userId String
+  key    String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, key])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String    // staff name, or "Customer: email" / "System"
+  action    String    // machine name, e.g. product.update
+  entity    String
+  entityId  String?
+  category  String   @default("system") // auth security order payment catalog content staff settings customer notification system
+  level     String   @default("info")   // info | warn | error
+  summary   String   @default("")       // human readable sentence
+  ip        String?
+  userAgent String?
+  meta      Json?
+  // written by the hidden support account (or about it): never shown in the normal Activity log
+  hidden    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([hidden])
+  @@index([category])
+  @@index([userId])
+  @@index([level])
+}
+
+// ───────────────────────── Customers ─────────────────────────
+
+model Customer {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  phone           String    @unique
+  name            String
+  address         String?
+  zoneId          String?
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  // when the person chose a password. Orders placed BEFORE this stay hidden until the email is verified.
+  accountCreatedAt DateTime?
+  createdAt       DateTime  @default(now())
+
+  orders Order[]
+  tokens AuthToken[]
+}
+
+model AuthToken {
+  id         String   @id @default(cuid())
+  customerId String
+  type       String // VERIFY | RESET
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+// ───────────────────────── Catalog ─────────────────────────
+
+model Category {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  nameEn    String
+  nameAr    String  @default("")
+  descEn    String  @default("")
+  descAr    String  @default("")
+  image     String?
+  sortOrder Int     @default(0)
+  visible   Boolean @default(true)
+
+  products ProductCategory[]
+  offers   OfferCategory[]
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  nameEn      String
+  nameAr      String  @default("")
+  shortEn     String  @default("")
+  shortAr     String  @default("")
+  descEn      String  @default("")
+  descAr      String  @default("")
+  active      Boolean @default(true)
+  featured    Boolean @default(false)
+  isNew       Boolean @default(false)
+  sortOrder   Int     @default(0)
+  // What the option buttons are called on the page: SCENT | COLOR | TYPE
+  optionKind  String  @default("SCENT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categories ProductCategory[]
+  sizes      ProductSize[]
+  options    ProductOption[]
+  images     ProductImage[]
+  variants   Variant[]
+  offers     OfferProduct[]
+  @@index([active, sortOrder])
+}
+
+// A time-limited (or open-ended) discount that staff create in the dashboard.
+// It applies to chosen products, whole categories, or the entire shop, and is calculated
+// automatically on the storefront and at checkout (the best discount wins if several match).
+model Offer {
+  id         String    @id @default(cuid())
+  nameEn     String
+  nameAr     String    @default("")
+  descEn     String    @default("")
+  descAr     String    @default("")
+  kind       String    // PERCENT | AMOUNT
+  value      Decimal   @db.Decimal(10, 2)
+  scope      String    @default("PRODUCTS") // ALL | CATEGORIES | PRODUCTS
+  active     Boolean   @default(true)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  showOnHome Boolean   @default(true)
+  image      String?
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  products   OfferProduct[]
+  categories OfferCategory[]
+}
+
+model OfferProduct {
+  offerId   String
+  productId String
+  offer     Offer   @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, productId])
+}
+
+model OfferCategory {
+  offerId    String
+  categoryId String
+  offer      Offer    @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([offerId, categoryId])
+}
+
+model ProductCategory {
+  productId  String
+  categoryId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+}
+
+model ProductSize {
+  id        String  @id @default(cuid())
+  productId String
+  labelEn   String
+  labelAr   String  @default("")
+  sortOrder Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variants  Variant[]
+}
+
+model ProductOption {
+  id        String  @id @default(cuid())
+  productId String
+  labelEn   String
+  labelAr   String  @default("")
+  swatch    String? // optional hex colour for colour options
+  imageId   String? // clicking this option switches the gallery to this image
+  sortOrder Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variants  Variant[]
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  path      String // relative upload path or absolute URL
+  alt       String  @default("")
+  sortOrder Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Variant {
+  id             String   @id @default(cuid())
+  productId      String
+  sizeId         String?
+  optionId       String?
+  sku            String?
+  price          Decimal  @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  stock          Int      @default(0)
+  active         Boolean  @default(true)
+
+  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size    ProductSize?   @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+  option  ProductOption? @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  items   OrderItem[]
+  stockLog StockLog[]
+
+  @@index([productId])
+}
+
+model StockLog {
+  id        String   @id @default(cuid())
+  variantId String
+  delta     Int
+  reason    String
+  userName  String?
+  createdAt DateTime @default(now())
+  variant   Variant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
+
+// ───────────────────────── Orders ─────────────────────────
+
+model DeliveryZone {
+  id        String  @id @default(cuid())
+  nameEn    String
+  nameAr    String  @default("")
+  fee       Decimal @db.Decimal(10, 2)
+  freeOver  Decimal? @db.Decimal(10, 2)
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  number        Int      @unique @default(autoincrement())
+  accessKey     String   @unique
+  status        String   @default("NEW") // NEW CONFIRMED PREPARING OUT_FOR_DELIVERY DELIVERED CANCELLED
+  paymentMethod String   // COD | WHISH
+  paymentStatus String   @default("UNPAID") // UNPAID PENDING PAID FAILED REFUNDED
+  customerId    String?
+  name          String
+  email         String
+  phone         String
+  address       String
+  zoneId        String?
+  zoneName      String   @default("")
+  notes         String   @default("")
+  subtotal      Decimal  @db.Decimal(10, 2)
+  deliveryFee   Decimal  @db.Decimal(10, 2)
+  total         Decimal  @db.Decimal(10, 2)
+  locale        String   @default("en")
+  flag          String?
+  whishExternalId String? @unique
+  whishUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  events   OrderEvent[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([customerId])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  variantId   String?
+  productId   String?
+  nameEn      String
+  nameAr      String  @default("")
+  sizeLabelEn String  @default("")
+  sizeLabelAr String  @default("")
+  optionLabelEn String @default("")
+  optionLabelAr String @default("")
+  image       String?
+  unitPrice   Decimal @db.Decimal(10, 2)
+  originalPrice Decimal? @db.Decimal(10, 2)
+  offerName   String  @default("")
+  qty         Int
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant     Variant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  status    String?
+  note      String   @default("")
+  userId    String?
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  orderId   String?
+  channel   String
+  ok        Boolean
+  error     String?
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+
+// ───────────────────────── CMS ─────────────────────────
+
+// Every editable piece of text/image/link on the site: key -> EN + AR value.
+model Content {
+  key String @id
+  en  String @default("")
+  ar  String @default("")
+}
+
+model Page {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  titleEn   String
+  titleAr   String  @default("")
+  bodyEn    String  @default("")
+  bodyAr    String  @default("")
+  published Boolean @default(true)
+  inFooter  Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+model Banner {
+  id         String  @id @default(cuid())
+  titleEn    String
+  titleAr    String  @default("")
+  subtitleEn String  @default("")
+  subtitleAr String  @default("")
+  ctaEn      String  @default("")
+  ctaAr      String  @default("")
+  link       String  @default("")
+  image      String?
+  active     Boolean @default(true)
+  sortOrder  Int     @default(0)
+}
+
+model Testimonial {
+  id        String  @id @default(cuid())
+  nameEn    String
+  nameAr    String  @default("")
+  textEn    String
+  textAr    String  @default("")
+  rating    Int     @default(5)
+  visible   Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  path      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String   @default("")
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

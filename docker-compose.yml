@@ -1,0 +1,57 @@
+# Production stack for one DigitalOcean droplet:  Caddy (HTTPS) -> Next.js app -> PostgreSQL
+# Everything here is free/open source. Copy .env.example to .env and fill it in first.
+# Tuned for a small server (1 GB RAM is enough): capped database + Node memory, rotated logs.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30", "-c", "work_mem=4MB", "-c", "maintenance_work_mem=32MB", "-c", "effective_cache_size=256MB"]
+    logging: &logs
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    environment:
+      POSTGRES_USER: jamrex
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: jamrex_miniyeh
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jamrex -d jamrex_miniyeh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    logging: *logs
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://jamrex:${DB_PASSWORD}@db:5432/jamrex_miniyeh?schema=public&connection_limit=6
+      UPLOAD_DIR: /data/uploads
+      NODE_OPTIONS: --max-old-space-size=320
+    volumes:
+      - uploads:/data/uploads
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    logging: *logs
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - uploads:/srv/uploads:ro # photos are served straight from disk by Caddy (Node is not involved)
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:
