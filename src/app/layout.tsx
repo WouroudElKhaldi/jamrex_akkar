@@ -31,7 +31,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={`${latin.variable} ${arabic.variable}`} suppressHydrationWarning>
       <head>
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
+        {/* Browsers blank the nonce attribute after load, so React would report a false hydration mismatch here */}
+        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-dvh antialiased" suppressHydrationWarning>{children}</body>
     </html>
